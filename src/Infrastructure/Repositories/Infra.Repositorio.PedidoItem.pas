@@ -23,7 +23,7 @@ uses
   FireDAC.Comp.Client;
 
 const
-  // ID é omitido: gerado pela coluna IDENTITY.
+  // ID é omitido: gerado pelo trigger TRG_PEDIDO_ITEM_BI.
   SQL_INSERIR =
     'INSERT INTO PEDIDO_ITEM (NUMERO_PEDIDO, CODIGO_PRODUTO, QUANTIDADE, VLR_UNITARIO, VLR_TOTAL) ' +
     'VALUES (:NUMERO_PEDIDO, :CODIGO_PRODUTO, :QUANTIDADE, :VLR_UNITARIO, :VLR_TOTAL)';

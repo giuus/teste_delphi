@@ -44,7 +44,7 @@ O código não usa variáveis inline nem outros recursos posteriores ao 10.3.
 Pré-requisitos para executar:
 
 - Servidor Firebird 2.5 instalado e em execução (porta padrão 3050). Para o 3.0, ver seção 7.
-- `binbclient.dll` **32 bits**, já incluído no repositório (ver seção 7).
+- `bin\fbclient.dll` **32 bits**, já incluído no repositório (ver seção 7).
 
 ## 2. Requisitos do teste x decisões de implementação
 
@@ -282,7 +282,7 @@ O `fbclient.dll` precisa ter a **mesma arquitetura do executável**, não a do s
 Como o executável é **Win32**, use sempre uma DLL **32 bits**, mesmo com servidor 64 bits. Uma
 DLL de arquitetura diferente causa erro ao carregar a biblioteca cliente na conexão.
 
-O repositório inclui `binbclient.dll` **2.5.2 (32 bits)**, como pede o teste.
+O repositório inclui `bin\fbclient.dll` **2.5.2 (32 bits)**, como pede o teste.
 
 - Essa DLL depende do runtime do Visual C++ 2005 x86 (`MSVCR80.dll`). Se ele não estiver instalado,
   instale o runtime ou copie o `fbclient.dll` e os arquivos `msvcr80.dll`, `msvcp80.dll` e
@@ -434,7 +434,7 @@ Verificações feitas no Windows com Delphi 10.3 e Firebird 2.5.6:
 - Testes DUnitX: 57 de 57 aprovados, sem vazamentos.
 - `database/db.sql` executado em um banco novo: 12 clientes, 12 produtos e índices conferidos.
 - Fluxo real pelo controller e pelos repositórios FireDAC contra esse banco, usando
-  `binbclient.dll`: consulta com acentos, gravação com produto repetido e quantidade fracionária,
+  `bin\fbclient.dll`: consulta com acentos, gravação com produto repetido e quantidade fracionária,
   carga, atualização, observação nula, cancelamento, rollback por FK com dados preservados e
   lacuna na sequence.
 - A tela abre conectada ao banco e fecha normalmente.
@@ -465,5 +465,5 @@ Os commits foram feitos conforme cada etapa foi concluída:
 9. Bônus: carregar, atualizar e cancelar pedido.
 10. Documentação.
 11. Compatibilidade do `db.sql` com Firebird 2.5 (generator + trigger).
-12. Inclusão de `binbclient.dll` na distribuição.
+12. Inclusão de `bin\fbclient.dll` na distribuição.
 13. Atualização da documentação com as verificações em Delphi e Firebird reais.

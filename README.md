@@ -36,15 +36,15 @@ Não havia projeto base indicando versões. Por isso adotei:
 |---|---|
 | IDE / compilador | Delphi 10.3 Rio (VCL, FireDAC, DUnitX incluídos) |
 | Plataforma | Win32 |
-| Banco | Firebird 3.0, dialeto 3, charset UTF8 |
+| Banco | Firebird 2.5 (testado no 2.5.6), dialeto 3, charset UTF8 |
 | Componentes | Somente nativos (VCL, FireDAC). Sem ORM ou bibliotecas de terceiros |
 
 O código não usa variáveis inline nem outros recursos posteriores ao 10.3.
 
 Pré-requisitos para executar:
 
-- Servidor Firebird 3.0 instalado e em execução (porta padrão 3050).
-- `fbclient.dll` **32 bits** do Firebird 3.0 em `bin\` (ver seção 7).
+- Servidor Firebird 2.5 instalado e em execução (porta padrão 3050). Para o 3.0, ver seção 7.
+- `binbclient.dll` **32 bits**, já incluído no repositório (ver seção 7).
 
 ## 2. Requisitos do teste x decisões de implementação
 
@@ -82,7 +82,8 @@ Pré-requisitos para executar:
   atualizações.
 - Depois de gravar com sucesso, a tela inicia automaticamente um novo pedido vazio.
 - Gravação bloqueada enquanto houver item em edição não confirmado.
-- `PEDIDO_ITEM.ID` usa `IDENTITY` (Firebird 3), e o número do pedido usa `SEQUENCE`.
+- `PEDIDO_ITEM.ID` usa generator + trigger, porque `IDENTITY` não existe no Firebird 2.5. O número
+  do pedido usa `SEQUENCE`.
 - Atualização de pedido carregado (bônus): o cabeçalho é atualizado e os itens são
   excluídos e reinseridos na mesma transação.
 
@@ -112,7 +113,7 @@ database/
   db.sql                          Esquema final + carga de dados
   migrations/001_...sql           Adiciona OBSERVACAO a bancos do esquema anterior
 tests/                            Projeto DUnitX separado (PedidoVendaTests.dpr)
-bin/                              Local do fbclient.dll (não versionado)
+bin/                              fbclient.dll 32 bits distribuído com a aplicação
 config.ini.example
 ```
 
@@ -145,7 +146,7 @@ Ownership:
 
 ### Criação
 
-1. Crie o banco (exemplo com o `isql` do Firebird 3, como SYSDBA ou outro usuário com permissão):
+1. Crie o banco (exemplo com o `isql` do Firebird, como SYSDBA ou outro usuário com permissão):
 
    ```
    isql -user SYSDBA -password <senha>
@@ -180,7 +181,7 @@ pelo `db.sql` atual**: ela falha porque a coluna já existe. Execute-a uma únic
 | PEDIDO.CODIGO_CLIENTE | INTEGER | NOT NULL, FK → CLIENTE |
 | PEDIDO.VALOR_TOTAL | NUMERIC(18,2) | NOT NULL, > 0 |
 | PEDIDO.OBSERVACAO | VARCHAR(200) | opcional |
-| PEDIDO_ITEM.ID | INTEGER IDENTITY | PK |
+| PEDIDO_ITEM.ID | INTEGER | PK, autoincremento por `SEQ_PEDIDO_ITEM_ID` + `TRG_PEDIDO_ITEM_BI` |
 | PEDIDO_ITEM.NUMERO_PEDIDO | INTEGER | NOT NULL, FK → PEDIDO |
 | PEDIDO_ITEM.CODIGO_PRODUTO | INTEGER | NOT NULL, FK → PRODUTO |
 | PEDIDO_ITEM.QUANTIDADE | NUMERIC(9,3) | NOT NULL, > 0 (máx. 999.999,999) |
@@ -253,7 +254,7 @@ Como a aplicação usa o arquivo:
   ClientLibrary` e os parâmetros do `TFDConnection` (DriverID=FB, Protocol=TCPIP,
   CharacterSet=UTF8).
 
-`config.ini`, bancos (`*.fdb`) e binários de `bin\` estão no `.gitignore`.
+`config.ini` e bancos (`*.fdb`) estão no `.gitignore`.
 
 ## 6. Compilação e execução
 
@@ -278,22 +279,17 @@ Observações:
 ## 7. Distribuição do cliente Firebird
 
 O `fbclient.dll` precisa ter a **mesma arquitetura do executável**, não a do servidor.
-Como o executável é **Win32**, use o `fbclient.dll` **32 bits** do Firebird 3.0, mesmo que o
-servidor seja 64 bits. Uma DLL de arquitetura diferente causa erro ao carregar a biblioteca
-cliente na conexão.
+Como o executável é **Win32**, use sempre uma DLL **32 bits**, mesmo com servidor 64 bits. Uma
+DLL de arquitetura diferente causa erro ao carregar a biblioteca cliente na conexão.
 
-**Pendência declarada:** o binário oficial não está no repositório. Ele não pôde ser obtido
-neste ambiente e não deve ser versionado. Nenhum arquivo fictício foi criado. Para obtê-lo:
+O repositório inclui `binbclient.dll` **2.5.2 (32 bits)**, como pede o teste.
 
-1. Baixe em <https://firebirdsql.org/en/firebird-3-0/> o kit **Windows 32-bit (zip)** da
-   mesma versão 3.0.x do servidor.
-2. Do zip, copie para `bin\` (ao lado do exe):
-   - `fbclient.dll`
-   - `msvcp100.dll` e `msvcr100.dll` (runtime do Visual C++ 2010 x86, incluído no kit), se o
-     runtime não estiver instalado na máquina
-   - opcionalmente `firebird.msg`, para mensagens de erro completas do cliente
-3. Também é possível usar o `fbclient.dll` da pasta `WOW64` de uma instalação 64 bits do
-   servidor, que é a versão 32 bits.
+- Essa DLL depende do runtime do Visual C++ 2005 x86 (`MSVCR80.dll`). Se ele não estiver instalado,
+  instale o runtime ou copie o `fbclient.dll` e os arquivos `msvcr80.dll`, `msvcp80.dll` e
+  `Microsoft.VC80.CRT.manifest` do kit Win32 do Firebird 2.5 para `bin\`.
+- Para servidor Firebird 3.0, troque a DLL pelo `fbclient.dll` 32 bits do kit Win32 do 3.0, junto
+  com `msvcp100.dll` e `msvcr100.dll`, ou use o da pasta `WOW64` da instalação 64 bits. Na
+  configuração padrão, o 3.0 não aceita a autenticação de um cliente 2.5.
 
 Estrutura de distribuição:
 
@@ -301,8 +297,6 @@ Estrutura de distribuição:
 PedidoVenda.exe
 config.ini
 bin\fbclient.dll
-bin\msvcp100.dll   (se necessário)
-bin\msvcr100.dll   (se necessário)
 ```
 
 O FireDAC é compilado no executável e não exige outras DLLs.
@@ -434,26 +428,26 @@ Consultas de conferência no `isql` estão indicadas onde se aplicam.
 
 ## 13. Premissas, limitações e pendências
 
-Verificações feitas no ambiente de desenvolvimento deste trabalho (Linux, **sem Delphi**):
+Verificações feitas no Windows com Delphi 10.3 e Firebird 2.5.6:
 
-- **Não foi possível compilar nem executar a aplicação Delphi ou os testes DUnitX**:
-  não há compilador Delphi no ambiente. As units VCL/FireDAC, o `.dfm` e os `.dproj` foram
-  revisados manualmente, mas **não foram compilados**.
-- `database/db.sql` e a migration **foram executados** em um Firebird 3.0.11 real: criação
-  do esquema, índices gerados pelas FKs, CHECKs (incluindo o arredondamento do `ROUND`) e
-  falha esperada da migration sobre o esquema final.
-- Os **comandos SQL dos repositórios** (extraídos das units) **foram executados** contra
-  esse banco com parâmetros: consultas, inserção, rollback após falha de FK no 2º item,
-  carga, atualização, exclusão e lacuna da sequence.
-- As units sem VCL/FireDAC (domínio, serviços, controller e fakes dos testes) **foram
-  compiladas com Free Pascal 3.2 (modo Delphi)** e exercitadas por um programa de
-  verificação equivalente aos testes DUnitX, com 0 falhas e 0 vazamentos de memória
-  (heaptrc). Esse programa não faz parte da entrega, porque o FPC 3.2 não suporta métodos
-  anônimos nem atributos do DUnitX.
+- Aplicação e testes compilados com o `msbuild`, em Win32/Debug.
+- Testes DUnitX: 57 de 57 aprovados, sem vazamentos.
+- `database/db.sql` executado em um banco novo: 12 clientes, 12 produtos e índices conferidos.
+- Fluxo real pelo controller e pelos repositórios FireDAC contra esse banco, usando
+  `binbclient.dll`: consulta com acentos, gravação com produto repetido e quantidade fracionária,
+  carga, atualização, observação nula, cancelamento, rollback por FK com dados preservados e
+  lacuna na sequence.
+- A tela abre conectada ao banco e fecha normalmente.
+
+Não verificado:
+
+- O `db.sql` atual e a aplicação **não foram executados em servidor Firebird 3.0**.
+- Os cenários da seção 12 que dependem de interação com a tela (ENTER e DEL na grade, foco,
+  mensagens e campos) não foram executados de forma automatizada. A regra de recálculo ao excluir
+  é coberta pelos testes do controller.
 
 Limitações conhecidas:
 
-- `fbclient.dll` não incluído (ver seção 7).
 - Atualização de pedido carregado: em edições concorrentes do mesmo pedido, prevalece a
   última gravação. Uma gravação simultânea gera conflito de lock no Firebird, tratado com
   rollback e mensagem de erro.
@@ -477,3 +471,6 @@ Os commits foram feitos conforme cada etapa foi concluída:
    item excluído e testes de regressão.
 9. Bônus: carregar, atualizar e cancelar pedido.
 10. Documentação.
+11. Compatibilidade do `db.sql` com Firebird 2.5 (generator + trigger).
+12. Inclusão de `binbclient.dll` na distribuição.
+13. Atualização da documentação com as verificações em Delphi e Firebird reais.

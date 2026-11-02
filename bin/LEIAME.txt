@@ -1,2 +1,2 @@
-Coloque aqui o fbclient.dll (32 bits) e suas dependencias.
+fbclient.dll: cliente Firebird 2.5.2 de 32 bits, distribuido com a aplicacao.
 Veja a secao "Distribuicao do cliente Firebird" do README.md.

@@ -36,3 +36,10 @@ Win64/
 *.dproj.local
 *.groupproj.local
 *.log
+
+# Excecao: o teste pede o cliente Firebird distribuido junto da aplicacao
+!bin/fbclient.dll
+
+# Ferramentas locais
+.claude/
+.claude-flow/

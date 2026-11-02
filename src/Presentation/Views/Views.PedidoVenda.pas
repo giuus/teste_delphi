@@ -50,6 +50,8 @@ type
     edtCidade: TEdit;
     lblUF: TLabel;
     edtUF: TEdit;
+    lblObservacao: TLabel;
+    edtObservacao: TEdit;
     grpItem: TGroupBox;
     lblCodigoProduto: TLabel;
     edtCodigoProduto: TEdit;
@@ -73,6 +75,7 @@ type
     procedure CampoKeyDownAvancar(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure edtCodigoClienteChange(Sender: TObject);
     procedure edtCodigoClienteExit(Sender: TObject);
+    procedure edtObservacaoChange(Sender: TObject);
     procedure edtCodigoProdutoChange(Sender: TObject);
     procedure edtCodigoProdutoExit(Sender: TObject);
     procedure btnInserirItemClick(Sender: TObject);
@@ -135,6 +138,8 @@ const
 
 procedure TfrmPedidoVenda.FormCreate(Sender: TObject);
 begin
+  // Mesmo limite de PEDIDO.OBSERVACAO VARCHAR(200).
+  edtObservacao.MaxLength := TRegrasPedido.TAMANHO_MAXIMO_OBSERVACAO;
   CriarProjecaoItens;
 end;
 
@@ -236,6 +241,7 @@ begin
   if FController.Cliente = nil then
     DefinirTexto(edtCodigoCliente, '');
   ExibirCliente;
+  DefinirTexto(edtObservacao, FController.Pedido.Observacao);
   LimparCamposItem;
   AtualizarItens(0);
 end;
@@ -348,6 +354,13 @@ begin
   // Código alterado: o cliente consultado anteriormente deixa de valer.
   FController.DescartarCliente;
   ExibirCliente;
+end;
+
+procedure TfrmPedidoVenda.edtObservacaoChange(Sender: TObject);
+begin
+  if FAtualizandoCampos or (FController = nil) then
+    Exit;
+  FController.AlterarObservacao(edtObservacao.Text);
 end;
 
 procedure TfrmPedidoVenda.edtCodigoClienteExit(Sender: TObject);

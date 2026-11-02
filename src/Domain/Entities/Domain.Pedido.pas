@@ -43,10 +43,12 @@ type
     FNumero: Integer;
     FDataEmissao: TDateTime;
     FCodigoCliente: Integer;
+    FObservacao: string;
     FItens: TObjectList<TPedidoItem>;
     FUltimoIdItem: Integer;
     function GetItem(AIndice: Integer): TPedidoItem;
     function IndiceDoItem(AIdItem: Integer): Integer;
+    procedure SetObservacao(const AValor: string);
   public
     constructor Create(ADataEmissao: TDateTime);
     destructor Destroy; override;
@@ -70,6 +72,8 @@ type
     property Numero: Integer read FNumero;
     property DataEmissao: TDateTime read FDataEmissao;
     property CodigoCliente: Integer read FCodigoCliente write FCodigoCliente;
+    /// Texto curto opcional (evolução: PEDIDO.OBSERVACAO).
+    property Observacao: string read FObservacao write SetObservacao;
     /// Itens pertencem ao pedido; não libere as instâncias retornadas.
     property Itens[AIndice: Integer]: TPedidoItem read GetItem;
   end;
@@ -232,11 +236,20 @@ begin
     raise EValidacaoException.Create('Informe um cliente válido para o pedido.');
   if FItens.Count = 0 then
     raise EValidacaoException.Create('Inclua pelo menos um item no pedido.');
+  if Length(FObservacao) > TRegrasPedido.TAMANHO_MAXIMO_OBSERVACAO then
+    raise EValidacaoException.CreateFmt('A observação aceita no máximo %d caracteres.',
+      [TRegrasPedido.TAMANHO_MAXIMO_OBSERVACAO]);
   for LItem in FItens do
     TPedidoItem.Validar(TDadosItemPedido.Criar(LItem.CodigoProduto, LItem.DescricaoProduto,
       LItem.Quantidade, LItem.ValorUnitario));
   // Recalcula a partir dos itens; levanta exceção se exceder o limite.
   ValorTotal;
+end;
+
+procedure TPedido.SetObservacao(const AValor: string);
+begin
+  // O tamanho é validado na gravação, permitindo exibir a mensagem ao operador.
+  FObservacao := Trim(AValor);
 end;
 
 procedure TPedido.DefinirNumero(ANumero: Integer);

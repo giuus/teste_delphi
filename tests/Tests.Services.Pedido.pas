@@ -26,6 +26,8 @@ type
     [Test] procedure NaoRegravaPedidoJaGravado;
     [Test] procedure ClienteInexistenteNaoIniciaTransacao;
     [Test] procedure PedidoSemItensNaoIniciaTransacao;
+    [Test] procedure GravaObservacao;
+    [Test] procedure ObservacaoAcimaDoLimiteNaoIniciaTransacao;
   end;
 
 implementation
@@ -33,6 +35,7 @@ implementation
 uses
   System.SysUtils,
   Domain.Exceptions,
+  Domain.Regras,
   Services.Pedido;
 
 procedure TTestesPedidoService.Preparar;
@@ -122,6 +125,20 @@ begin
   FreeAndNil(FPedido);
   FPedido := TPedido.Create(Date);
   FPedido.CodigoCliente := 1;
+  Assert.WillRaise(procedure begin FService.GravarPedido(FPedido); end, EValidacaoException);
+  Assert.AreEqual(0, FRegistro.Iniciadas);
+end;
+
+procedure TTestesPedidoService.GravaObservacao;
+begin
+  FPedido.Observacao := '  Entregar pela manhã  ';
+  FService.GravarPedido(FPedido);
+  Assert.AreEqual('Entregar pela manhã', FRegistro.ObservacaoGravada);
+end;
+
+procedure TTestesPedidoService.ObservacaoAcimaDoLimiteNaoIniciaTransacao;
+begin
+  FPedido.Observacao := StringOfChar('x', TRegrasPedido.TAMANHO_MAXIMO_OBSERVACAO + 1);
   Assert.WillRaise(procedure begin FService.GravarPedido(FPedido); end, EValidacaoException);
   Assert.AreEqual(0, FRegistro.Iniciadas);
 end;

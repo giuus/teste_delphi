@@ -18,6 +18,8 @@ implementation
 
 uses
   System.SysUtils,
+  Data.DB,
+  FireDAC.Stan.Param,
   FireDAC.Comp.Client;
 
 const
@@ -27,8 +29,18 @@ const
     'SELECT NEXT VALUE FOR SEQ_PEDIDO_NUMERO AS NUMERO FROM RDB$DATABASE';
 
   SQL_INSERIR =
-    'INSERT INTO PEDIDO (NUMERO_PEDIDO, DATA_EMISSAO, CODIGO_CLIENTE, VALOR_TOTAL) ' +
-    'VALUES (:NUMERO_PEDIDO, :DATA_EMISSAO, :CODIGO_CLIENTE, :VALOR_TOTAL)';
+    'INSERT INTO PEDIDO (NUMERO_PEDIDO, DATA_EMISSAO, CODIGO_CLIENTE, VALOR_TOTAL, OBSERVACAO) ' +
+    'VALUES (:NUMERO_PEDIDO, :DATA_EMISSAO, :CODIGO_CLIENTE, :VALOR_TOTAL, :OBSERVACAO)';
+
+procedure AtribuirObservacao(AParametro: TFDParam; const AObservacao: string);
+begin
+  AParametro.DataType := ftWideString;
+  // Observação vazia é gravada como NULL.
+  if AObservacao = '' then
+    AParametro.Clear
+  else
+    AParametro.AsWideString := AObservacao;
+end;
 
 function TPedidoRepository.GerarNumero: Integer;
 var
@@ -58,6 +70,7 @@ begin
     LQuery.ParamByName('CODIGO_CLIENTE').AsInteger := APedido.CodigoCliente;
     // Total recalculado a partir dos itens, com a mesma regra da tela.
     LQuery.ParamByName('VALOR_TOTAL').AsCurrency := APedido.ValorTotal;
+    AtribuirObservacao(LQuery.ParamByName('OBSERVACAO'), APedido.Observacao);
     LQuery.ExecSQL;
   finally
     LQuery.Free;

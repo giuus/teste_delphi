@@ -51,6 +51,8 @@ type
     function ConsultarProduto(ACodigo: Integer; out ASugerirPreco: Boolean): TProduto;
     procedure DescartarProduto;
 
+    procedure AlterarObservacao(const AObservacao: string);
+
     /// Inclui um novo item ou atualiza o item em edição. Retorna o Id do item.
     function SalvarItem(AQuantidade, AValorUnitario: Currency): Integer;
     function IniciarEdicaoItem(AIdItem: Integer): TPedidoItem;
@@ -169,6 +171,12 @@ end;
 procedure TPedidoVendaController.DescartarProduto;
 begin
   SubstituirProduto(nil);
+end;
+
+procedure TPedidoVendaController.AlterarObservacao(const AObservacao: string);
+begin
+  FPedido.Observacao := AObservacao;
+  FAlterado := True;
 end;
 
 function TPedidoVendaController.ProdutoValidado: TProduto;

@@ -142,6 +142,24 @@ object frmPedidoVenda: TfrmPedidoVenda
         ReadOnly = True
         TabOrder = 3
       end
+      object lblObservacao: TLabel
+        Left = 12
+        Top = 70
+        Width = 62
+        Height = 13
+        Caption = 'Observa'#231#227'o:'
+      end
+      object edtObservacao: TEdit
+        Left = 100
+        Top = 67
+        Width = 750
+        Height = 21
+        Anchors = [akLeft, akTop, akRight]
+        MaxLength = 200
+        TabOrder = 4
+        OnChange = edtObservacaoChange
+        OnKeyDown = CampoKeyDownAvancar
+      end
     end
     object grpItem: TGroupBox
       Left = 8

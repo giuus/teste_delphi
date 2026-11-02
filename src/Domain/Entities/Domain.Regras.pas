@@ -6,6 +6,7 @@
     Quantidade      NUMERIC(9,3)  -> 0,001 a 999.999,999
     Valor unitário  NUMERIC(9,2)  -> 0,01  a 9.999.999,99
     Totais          NUMERIC(18,2)
+    Observação      VARCHAR(200)
 
   Política de arredondamento:
     Total do item   = Quantidade x Valor unitário, arredondado para 2 casas,
@@ -31,6 +32,7 @@ type
     // Limite de negócio para o total do pedido. Fica abaixo do limite do
     // Currency (~9,2 x 10^14) e do NUMERIC(18,2), evitando estouro na soma.
     VALOR_TOTAL_PEDIDO_MAXIMO: Currency = 99999999999999.99;
+    TAMANHO_MAXIMO_OBSERVACAO = 200;
   public
     class function CalcularTotalItem(AQuantidade, AValorUnitario: Currency): Currency; static;
     class function SomarTotal(ATotalAtual, AValor: Currency): Currency; static;

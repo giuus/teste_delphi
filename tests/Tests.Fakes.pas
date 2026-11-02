@@ -39,6 +39,7 @@ type
     ItensConfirmados: Integer;
     FalharNoItem: Integer;
     TotalGravado: Currency;
+    ObservacaoGravada: string;
     constructor Create;
   end;
 
@@ -164,6 +165,7 @@ begin
     raise EInvalidOpException.Create('Inserir fora de transação.');
   Inc(FRegistro.CabecalhosPendentes);
   FRegistro.TotalGravado := APedido.ValorTotal;
+  FRegistro.ObservacaoGravada := APedido.Observacao;
 end;
 
 { TFakePedidoItemRepository }

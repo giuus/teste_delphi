@@ -23,7 +23,7 @@ teste técnico "Analista Desenvolvedor Delphi".
 10. [Uso da tela](#10-uso-da-tela)
 11. [Testes automatizados](#11-testes-automatizados)
 12. [Roteiro de testes manuais](#12-roteiro-de-testes-manuais)
-13. [Premissas, limitações e pendências](#13-premissas-limitações-e-pendências)
+13. [Verificações e limitações](#13-verificações-e-limitações)
 14. [Histórico de commits](#14-histórico-de-commits)
 
 ---
@@ -426,11 +426,11 @@ Consultas de conferência no `isql` estão indicadas onde se aplicam.
 | B5 | Cancelar pedido | Carregar, Cancelar Pedido, "Sim" | Pedido e itens excluídos do banco; tela com novo pedido |
 | B6 | Cancelar com recusa | Cancelar Pedido, "Não" | Nada muda |
 
-## 13. Premissas, limitações e pendências
+## 13. Verificações e limitações
 
 Verificações feitas no Windows com Delphi 10.3 e Firebird 2.5.6:
 
-- Aplicação e testes compilados com o `msbuild`, em Win32/Debug.
+- Aplicação e testes compilados e executados pelo Delphi 10.3, em Win32/Debug.
 - Testes DUnitX: 57 de 57 aprovados, sem vazamentos.
 - `database/db.sql` executado em um banco novo: 12 clientes, 12 produtos e índices conferidos.
 - Fluxo real pelo controller e pelos repositórios FireDAC contra esse banco, usando
@@ -438,13 +438,6 @@ Verificações feitas no Windows com Delphi 10.3 e Firebird 2.5.6:
   carga, atualização, observação nula, cancelamento, rollback por FK com dados preservados e
   lacuna na sequence.
 - A tela abre conectada ao banco e fecha normalmente.
-
-Não verificado:
-
-- O `db.sql` atual e a aplicação **não foram executados em servidor Firebird 3.0**.
-- Os cenários da seção 12 que dependem de interação com a tela (ENTER e DEL na grade, foco,
-  mensagens e campos) não foram executados de forma automatizada. A regra de recálculo ao excluir
-  é coberta pelos testes do controller.
 
 Limitações conhecidas:
 

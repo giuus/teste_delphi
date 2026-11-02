@@ -20,8 +20,13 @@ type
   IPedidoService = interface
     ['{A03A1C17-4083-457C-B10D-223F5960F146}']
     /// Grava cabeçalho e itens em uma única transação e retorna o número do
-    /// pedido. O número só é atribuído ao objeto depois do commit.
+    /// pedido. Pedido novo: o número só é atribuído ao objeto depois do
+    /// commit. Pedido carregado: atualiza o mesmo número, substituindo os itens.
     function GravarPedido(APedido: TPedido): Integer;
+    /// Cabeçalho e itens de um pedido gravado. O chamador é dono do objeto.
+    function CarregarPedido(ANumero: Integer): TPedido;
+    /// Exclusão física de itens e cabeçalho em uma transação.
+    procedure CancelarPedido(ANumero: Integer);
   end;
 
 implementation

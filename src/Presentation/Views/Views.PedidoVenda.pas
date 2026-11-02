@@ -38,6 +38,11 @@ type
   TfrmPedidoVenda = class(TForm)
     pnlCabecalho: TPanel;
     grpPedido: TGroupBox;
+    lblNumeroPedido: TLabel;
+    edtNumeroPedido: TEdit;
+    btnCarregarPedido: TButton;
+    btnNovoPedido: TButton;
+    btnCancelarPedido: TButton;
     lblDataEmissao: TLabel;
     edtDataEmissao: TEdit;
     lblSituacao: TLabel;
@@ -82,6 +87,10 @@ type
     procedure btnCancelarEdicaoClick(Sender: TObject);
     procedure grdItensKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure btnGravarPedidoClick(Sender: TObject);
+    procedure edtNumeroPedidoKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure btnCarregarPedidoClick(Sender: TObject);
+    procedure btnNovoPedidoClick(Sender: TObject);
+    procedure btnCancelarPedidoClick(Sender: TObject);
   private const
     CAMPO_ID = 'ITEM_ID';
     CAMPO_CODIGO = 'CODIGO_PRODUTO';
@@ -237,7 +246,18 @@ end;
 procedure TfrmPedidoVenda.ExibirPedido;
 begin
   edtDataEmissao.Text := DateToStr(FController.Pedido.DataEmissao);
-  lblSituacao.Caption := 'Novo pedido (ainda não gravado)';
+  if FController.Pedido.Persistido then
+  begin
+    edtNumeroPedido.Text := IntToStr(FController.Pedido.Numero);
+    lblSituacao.Caption := Format('Pedido nº %d carregado (alterações serão gravadas nele)',
+      [FController.Pedido.Numero]);
+  end
+  else
+  begin
+    edtNumeroPedido.Clear;
+    lblSituacao.Caption := 'Novo pedido (ainda não gravado)';
+  end;
+  btnCancelarPedido.Enabled := FController.Pedido.Persistido;
   if FController.Cliente = nil then
     DefinirTexto(edtCodigoCliente, '');
   ExibirCliente;
@@ -564,8 +584,10 @@ end;
 procedure TfrmPedidoVenda.btnGravarPedidoClick(Sender: TObject);
 var
   LNumero: Integer;
+  LAtualizacao: Boolean;
 begin
   LNumero := 0;
+  LAtualizacao := FController.Pedido.Persistido;
   btnGravarPedido.Enabled := False;
   try
     if ExecutarAcao(
@@ -575,14 +597,80 @@ begin
       end) then
     begin
       // O número só é exibido depois do commit.
-      MessageDlg(Format('Pedido nº %d gravado com sucesso.', [LNumero]),
-        mtInformation, [mbOK], 0);
+      if LAtualizacao then
+        MessageDlg(Format('Pedido nº %d atualizado com sucesso.', [LNumero]),
+          mtInformation, [mbOK], 0)
+      else
+        MessageDlg(Format('Pedido nº %d gravado com sucesso.', [LNumero]),
+          mtInformation, [mbOK], 0);
       ExibirPedido;
       edtCodigoCliente.SetFocus;
     end;
     // Em caso de erro os dados da tela são mantidos para correção.
   finally
     btnGravarPedido.Enabled := True;
+  end;
+end;
+
+{ Carregar, novo e cancelar (bônus) }
+
+procedure TfrmPedidoVenda.edtNumeroPedidoKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    Key := 0;
+    btnCarregarPedido.Click;
+  end;
+end;
+
+procedure TfrmPedidoVenda.btnCarregarPedidoClick(Sender: TObject);
+begin
+  ExecutarAcao(
+    procedure
+    var
+      LNumero: Integer;
+    begin
+      LNumero := TConversaoEntrada.LerCodigo(edtNumeroPedido.Text, 'número do pedido');
+      if not ConfirmarDescarte then
+        Exit;
+      // Se o pedido não existir, o pedido atual permanece na tela.
+      FController.CarregarPedido(LNumero);
+      ExibirPedido;
+      grdItens.SetFocus;
+    end);
+end;
+
+procedure TfrmPedidoVenda.btnNovoPedidoClick(Sender: TObject);
+begin
+  if not ConfirmarDescarte then
+    Exit;
+  FController.NovoPedido;
+  ExibirPedido;
+  edtCodigoCliente.SetFocus;
+end;
+
+procedure TfrmPedidoVenda.btnCancelarPedidoClick(Sender: TObject);
+var
+  LNumero: Integer;
+begin
+  if not FController.Pedido.Persistido then
+    Exit;
+  LNumero := FController.Pedido.Numero;
+  if MessageDlg(Format('Cancelar o pedido nº %d?%sO pedido e seus itens serão excluídos ' +
+    'definitivamente do banco de dados.', [LNumero, sLineBreak + sLineBreak]),
+    mtConfirmation, [mbYes, mbNo], 0, mbNo) <> mrYes then
+    Exit;
+
+  if ExecutarAcao(
+    procedure
+    begin
+      FController.CancelarPedido;
+    end) then
+  begin
+    MessageDlg(Format('Pedido nº %d cancelado.', [LNumero]), mtInformation, [mbOK], 0);
+    ExibirPedido;
+    edtCodigoCliente.SetFocus;
   end;
 end;
 

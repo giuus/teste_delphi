@@ -13,6 +13,7 @@ object frmPedidoVenda: TfrmPedidoVenda
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  ActiveControl = edtCodigoCliente
   Position = poScreenCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
@@ -34,34 +35,82 @@ object frmPedidoVenda: TfrmPedidoVenda
       Anchors = [akLeft, akTop, akRight]
       Caption = ' Pedido '
       TabOrder = 0
-      object lblDataEmissao: TLabel
+      object lblNumeroPedido: TLabel
         Left = 12
+        Top = 23
+        Width = 54
+        Height = 13
+        Caption = 'N'#186' Pedido:'
+      end
+      object lblDataEmissao: TLabel
+        Left = 476
         Top = 23
         Width = 44
         Height = 13
         Caption = 'Emiss'#227'o:'
       end
       object lblSituacao: TLabel
-        Left = 172
-        Top = 23
-        Width = 3
-        Height = 13
+        Left = 620
+        Top = 16
+        Width = 236
+        Height = 30
+        AutoSize = False
+        Anchors = [akLeft, akTop, akRight]
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clNavy
         Font.Height = -11
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
+        WordWrap = True
+      end
+      object edtNumeroPedido: TEdit
+        Left = 72
+        Top = 20
+        Width = 70
+        Height = 21
+        MaxLength = 9
+        NumbersOnly = True
+        TabOrder = 0
+        OnKeyDown = edtNumeroPedidoKeyDown
+      end
+      object btnCarregarPedido: TButton
+        Left = 148
+        Top = 18
+        Width = 105
+        Height = 25
+        Caption = 'Carregar Pedido'
+        TabOrder = 1
+        OnClick = btnCarregarPedidoClick
+      end
+      object btnNovoPedido: TButton
+        Left = 259
+        Top = 18
+        Width = 90
+        Height = 25
+        Caption = 'Novo Pedido'
+        TabOrder = 2
+        OnClick = btnNovoPedidoClick
+      end
+      object btnCancelarPedido: TButton
+        Left = 355
+        Top = 18
+        Width = 105
+        Height = 25
+        Caption = 'Cancelar Pedido'
+        Enabled = False
+        TabOrder = 3
+        OnClick = btnCancelarPedidoClick
       end
       object edtDataEmissao: TEdit
-        Left = 64
+        Left = 528
         Top = 20
-        Width = 90
+        Width = 80
         Height = 21
         TabStop = False
         Color = clBtnFace
         ReadOnly = True
-        TabOrder = 0
+        TabOrder = 4
       end
     end
     object grpCliente: TGroupBox

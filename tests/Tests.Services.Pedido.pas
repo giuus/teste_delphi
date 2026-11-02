@@ -23,7 +23,12 @@ type
     [Test] procedure FalhaNoItemDesfazTudo;
     [Test] procedure FalhaPreservaPedidoEmMemoria;
     [Test] procedure NumeroConsumidoNaFalhaGeraLacuna;
-    [Test] procedure NaoRegravaPedidoJaGravado;
+    [Test] procedure SegundaGravacaoAtualizaMesmoNumero;
+    [Test] procedure CarregarPedidoComProdutosRepetidos;
+    [Test] procedure CarregarPedidoInexistenteFalha;
+    [Test] procedure AtualizarPedidoCanceladoDesfaz;
+    [Test] procedure CancelarPedidoExcluiItensECabecalho;
+    [Test] procedure CancelarPedidoInexistenteDesfaz;
     [Test] procedure ClienteInexistenteNaoIniciaTransacao;
     [Test] procedure PedidoSemItensNaoIniciaTransacao;
     [Test] procedure GravaObservacao;
@@ -105,11 +110,71 @@ begin
   Assert.AreEqual(2, FService.GravarPedido(FPedido));
 end;
 
-procedure TTestesPedidoService.NaoRegravaPedidoJaGravado;
+procedure TTestesPedidoService.SegundaGravacaoAtualizaMesmoNumero;
+var
+  LNumero: Integer;
+begin
+  LNumero := FService.GravarPedido(FPedido);
+  FRegistro.PedidoExistente := LNumero;
+  FPedido.AdicionarItem(TDadosItemPedido.Criar(2, 'Produto 2', 1, 1));
+  Assert.AreEqual(LNumero, FService.GravarPedido(FPedido));
+  Assert.AreEqual(1, FRegistro.Atualizados);
+  Assert.AreEqual(1, FRegistro.ItensExcluidos);
+  Assert.AreEqual(1, FRegistro.CabecalhosConfirmados);
+  Assert.AreEqual(2 + 3, FRegistro.ItensConfirmados);
+  Assert.AreEqual<Currency>(21.08, FRegistro.TotalGravado);
+end;
+
+procedure TTestesPedidoService.CarregarPedidoComProdutosRepetidos;
+var
+  LPedido: TPedido;
+begin
+  FRegistro.PedidoExistente := 7;
+  LPedido := FService.CarregarPedido(7);
+  try
+    Assert.AreEqual(7, LPedido.Numero);
+    Assert.AreEqual(2, LPedido.QuantidadeItens);
+    Assert.AreEqual(LPedido.Itens[0].CodigoProduto, LPedido.Itens[1].CodigoProduto);
+    Assert.AreNotEqual(LPedido.Itens[0].Id, LPedido.Itens[1].Id);
+    Assert.AreEqual<Currency>(50, LPedido.ValorTotal);
+    Assert.AreEqual('Gravado anteriormente', LPedido.Observacao);
+  finally
+    LPedido.Free;
+  end;
+end;
+
+procedure TTestesPedidoService.CarregarPedidoInexistenteFalha;
+begin
+  Assert.WillRaise(procedure begin FService.CarregarPedido(99).Free; end,
+    ERegistroNaoEncontradoException);
+  Assert.IsFalse(FRegistro.Ativa);
+end;
+
+procedure TTestesPedidoService.AtualizarPedidoCanceladoDesfaz;
 begin
   FService.GravarPedido(FPedido);
-  Assert.WillRaise(procedure begin FService.GravarPedido(FPedido); end, EValidacaoException);
-  Assert.AreEqual(1, FRegistro.Iniciadas);
+  FRegistro.PedidoExistente := 0;
+  Assert.WillRaise(procedure begin FService.GravarPedido(FPedido); end,
+    ERegistroNaoEncontradoException);
+  Assert.AreEqual(1, FRegistro.Desfeitas);
+  Assert.AreEqual(0, FRegistro.ItensExcluidos);
+end;
+
+procedure TTestesPedidoService.CancelarPedidoExcluiItensECabecalho;
+begin
+  FRegistro.PedidoExistente := 7;
+  FService.CancelarPedido(7);
+  Assert.AreEqual(1, FRegistro.ItensExcluidos);
+  Assert.AreEqual(1, FRegistro.CabecalhosExcluidos);
+  Assert.AreEqual(1, FRegistro.Confirmadas);
+end;
+
+procedure TTestesPedidoService.CancelarPedidoInexistenteDesfaz;
+begin
+  Assert.WillRaise(procedure begin FService.CancelarPedido(99); end,
+    ERegistroNaoEncontradoException);
+  Assert.AreEqual(1, FRegistro.Desfeitas);
+  Assert.AreEqual(0, FRegistro.Confirmadas);
 end;
 
 procedure TTestesPedidoService.ClienteInexistenteNaoIniciaTransacao;

@@ -34,6 +34,10 @@ type
     [Test] procedure ExcluirProdutoRepetidoMantemOutraLinha;
     [Test] procedure ExcluirItemEmEdicaoEncerraEdicao;
     [Test] procedure ExcluirOutroItemMantemEdicao;
+    [Test] procedure CarregarPedidoExibeClienteEItens;
+    [Test] procedure CarregarPedidoInexistenteMantemPedidoAtual;
+    [Test] procedure CancelarSemPedidoCarregadoFalha;
+    [Test] procedure CancelarPedidoCarregadoIniciaNovo;
   end;
 
 implementation
@@ -247,6 +251,42 @@ begin
   FController.IniciarEdicaoItem(LId2);
   FController.ExcluirItem(LId1);
   Assert.AreEqual(LId2, FController.IdItemEmEdicao);
+end;
+
+procedure TTestesPedidoVendaController.CarregarPedidoExibeClienteEItens;
+begin
+  FRegistro.PedidoExistente := 7;
+  FController.CarregarPedido(7);
+  Assert.AreEqual(7, FController.Pedido.Numero);
+  Assert.IsNotNull(FController.Cliente);
+  Assert.AreEqual(2, FController.Pedido.QuantidadeItens);
+  Assert.IsFalse(FController.PossuiAlteracoes);
+end;
+
+procedure TTestesPedidoVendaController.CarregarPedidoInexistenteMantemPedidoAtual;
+begin
+  FController.ConsultarCliente(1);
+  IncluirItem(1, 1, 1);
+  Assert.WillRaise(procedure begin FController.CarregarPedido(99); end,
+    ERegistroNaoEncontradoException);
+  Assert.AreEqual(1, FController.Pedido.QuantidadeItens);
+  Assert.IsNotNull(FController.Cliente);
+end;
+
+procedure TTestesPedidoVendaController.CancelarSemPedidoCarregadoFalha;
+begin
+  Assert.WillRaise(procedure begin FController.CancelarPedido; end, EValidacaoException);
+  Assert.AreEqual(0, FRegistro.Iniciadas);
+end;
+
+procedure TTestesPedidoVendaController.CancelarPedidoCarregadoIniciaNovo;
+begin
+  FRegistro.PedidoExistente := 7;
+  FController.CarregarPedido(7);
+  Assert.AreEqual(7, FController.CancelarPedido);
+  Assert.IsFalse(FController.Pedido.Persistido);
+  Assert.AreEqual(0, FController.Pedido.QuantidadeItens);
+  Assert.AreEqual(1, FRegistro.CabecalhosExcluidos);
 end;
 
 initialization

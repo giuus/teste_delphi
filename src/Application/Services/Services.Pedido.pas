@@ -23,12 +23,17 @@ type
     FTransacao: ITransacao;
     procedure ValidarClienteExistente(ACodigoCliente: Integer);
     procedure DesfazerSeAtiva;
+    function InserirNovo(APedido: TPedido): Integer;
+    procedure AtualizarExistente(APedido: TPedido);
+    procedure ValidarNumero(ANumero: Integer);
   public
     constructor Create(const AClienteRepository: IClienteRepository;
       const APedidoRepository: IPedidoRepository;
       const AItemRepository: IPedidoItemRepository;
       const ATransacao: ITransacao);
     function GravarPedido(APedido: TPedido): Integer;
+    function CarregarPedido(ANumero: Integer): TPedido;
+    procedure CancelarPedido(ANumero: Integer);
   end;
 
 implementation
@@ -78,31 +83,95 @@ begin
     FTransacao.Desfazer;
 end;
 
+procedure TPedidoService.ValidarNumero(ANumero: Integer);
+begin
+  if ANumero <= 0 then
+    raise EValidacaoException.Create('Informe um número de pedido maior que zero.');
+end;
+
+function TPedidoService.InserirNovo(APedido: TPedido): Integer;
+begin
+  Result := FPedidoRepository.GerarNumero;
+  FPedidoRepository.Inserir(Result, APedido);
+  FItemRepository.InserirItens(Result, APedido);
+end;
+
+procedure TPedidoService.AtualizarExistente(APedido: TPedido);
+begin
+  // Mantém o número original; os itens são substituídos por completo para
+  // não duplicar linhas nem depender dos IDs antigos.
+  if not FPedidoRepository.Atualizar(APedido) then
+    raise ERegistroNaoEncontradoException.CreateFmt(
+      'O pedido %d não existe mais no banco (pode ter sido cancelado).', [APedido.Numero]);
+  FItemRepository.ExcluirPorPedido(APedido.Numero);
+  FItemRepository.InserirItens(APedido.Numero, APedido);
+end;
+
 function TPedidoService.GravarPedido(APedido: TPedido): Integer;
 var
   LNumero: Integer;
 begin
   if APedido = nil then
     raise EArgumentNilException.Create('APedido');
-  if APedido.Persistido then
-    raise EValidacaoException.CreateFmt('O pedido %d já foi gravado.', [APedido.Numero]);
 
   APedido.ValidarParaGravacao;
   ValidarClienteExistente(APedido.CodigoCliente);
 
   FTransacao.Iniciar;
   try
-    LNumero := FPedidoRepository.GerarNumero;
-    FPedidoRepository.Inserir(LNumero, APedido);
-    FItemRepository.InserirItens(LNumero, APedido);
+    if APedido.Persistido then
+    begin
+      AtualizarExistente(APedido);
+      LNumero := APedido.Numero;
+    end
+    else
+      LNumero := InserirNovo(APedido);
     FTransacao.Confirmar;
   except
     DesfazerSeAtiva;
     raise;
   end;
 
-  APedido.DefinirNumero(LNumero);
+  if not APedido.Persistido then
+    APedido.DefinirNumero(LNumero);
   Result := LNumero;
+end;
+
+function TPedidoService.CarregarPedido(ANumero: Integer): TPedido;
+var
+  LPedido: TPedido;
+begin
+  ValidarNumero(ANumero);
+  LPedido := nil;
+  // Cabeçalho e itens lidos na mesma transação.
+  FTransacao.Iniciar;
+  try
+    LPedido := FPedidoRepository.BuscarPorNumero(ANumero);
+    if LPedido = nil then
+      raise ERegistroNaoEncontradoException.CreateFmt('Pedido %d não encontrado.', [ANumero]);
+    FItemRepository.CarregarItens(LPedido);
+    FTransacao.Confirmar;
+  except
+    LPedido.Free;
+    DesfazerSeAtiva;
+    raise;
+  end;
+  Result := LPedido;
+end;
+
+procedure TPedidoService.CancelarPedido(ANumero: Integer);
+begin
+  ValidarNumero(ANumero);
+  FTransacao.Iniciar;
+  try
+    FItemRepository.ExcluirPorPedido(ANumero);
+    if not FPedidoRepository.Excluir(ANumero) then
+      raise ERegistroNaoEncontradoException.CreateFmt('Pedido %d não encontrado.', [ANumero]);
+    FTransacao.Confirmar;
+  except
+    DesfazerSeAtiva;
+    raise;
+  end;
 end;
 
 end.

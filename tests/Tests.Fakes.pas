@@ -40,6 +40,11 @@ type
     FalharNoItem: Integer;
     TotalGravado: Currency;
     ObservacaoGravada: string;
+    /// Número do único pedido "existente" no banco falso (0 = nenhum).
+    PedidoExistente: Integer;
+    Atualizados: Integer;
+    ItensExcluidos: Integer;
+    CabecalhosExcluidos: Integer;
     constructor Create;
   end;
 
@@ -61,6 +66,9 @@ type
     constructor Create(ARegistro: TRegistroGravacao);
     function GerarNumero: Integer;
     procedure Inserir(ANumero: Integer; APedido: TPedido);
+    function Atualizar(APedido: TPedido): Boolean;
+    function Excluir(ANumero: Integer): Boolean;
+    function BuscarPorNumero(ANumero: Integer): TPedido;
   end;
 
   TFakePedidoItemRepository = class(TInterfacedObject, IPedidoItemRepository)
@@ -69,6 +77,9 @@ type
   public
     constructor Create(ARegistro: TRegistroGravacao);
     procedure InserirItens(ANumeroPedido: Integer; APedido: TPedido);
+    procedure ExcluirPorPedido(ANumeroPedido: Integer);
+    /// Pedido existente tem dois itens do mesmo produto (1).
+    procedure CarregarItens(APedido: TPedido);
   end;
 
 const
@@ -168,6 +179,39 @@ begin
   FRegistro.ObservacaoGravada := APedido.Observacao;
 end;
 
+function TFakePedidoRepository.Atualizar(APedido: TPedido): Boolean;
+begin
+  if not FRegistro.Ativa then
+    raise EInvalidOpException.Create('Atualizar fora de transação.');
+  Result := (FRegistro.PedidoExistente > 0) and (APedido.Numero = FRegistro.PedidoExistente);
+  if Result then
+  begin
+    Inc(FRegistro.Atualizados);
+    FRegistro.TotalGravado := APedido.ValorTotal;
+    FRegistro.ObservacaoGravada := APedido.Observacao;
+  end;
+end;
+
+function TFakePedidoRepository.Excluir(ANumero: Integer): Boolean;
+begin
+  if not FRegistro.Ativa then
+    raise EInvalidOpException.Create('Excluir fora de transação.');
+  Result := (FRegistro.PedidoExistente > 0) and (ANumero = FRegistro.PedidoExistente);
+  if Result then
+    Inc(FRegistro.CabecalhosExcluidos);
+end;
+
+function TFakePedidoRepository.BuscarPorNumero(ANumero: Integer): TPedido;
+begin
+  Result := nil;
+  if (FRegistro.PedidoExistente = 0) or (ANumero <> FRegistro.PedidoExistente) then
+    Exit;
+  Result := TPedido.Create(EncodeDate(2026, 1, 10));
+  Result.DefinirNumero(ANumero);
+  Result.CodigoCliente := 1;
+  Result.Observacao := 'Gravado anteriormente';
+end;
+
 { TFakePedidoItemRepository }
 
 constructor TFakePedidoItemRepository.Create(ARegistro: TRegistroGravacao);
@@ -188,6 +232,19 @@ begin
       raise Exception.CreateFmt('Falha simulada ao gravar o item %d.', [LIndice + 1]);
     Inc(FRegistro.ItensPendentes);
   end;
+end;
+
+procedure TFakePedidoItemRepository.ExcluirPorPedido(ANumeroPedido: Integer);
+begin
+  if not FRegistro.Ativa then
+    raise EInvalidOpException.Create('Excluir fora de transação.');
+  Inc(FRegistro.ItensExcluidos);
+end;
+
+procedure TFakePedidoItemRepository.CarregarItens(APedido: TPedido);
+begin
+  APedido.AdicionarItem(TDadosItemPedido.Criar(1, 'Produto 1', 2, 10));
+  APedido.AdicionarItem(TDadosItemPedido.Criar(1, 'Produto 1', 3, 10));
 end;
 
 end.

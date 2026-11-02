@@ -59,9 +59,16 @@ type
     procedure CancelarEdicaoItem;
     procedure ExcluirItem(AIdItem: Integer);
 
-    /// Grava o pedido e, após o commit, inicia um novo pedido vazio.
-    /// Retorna o número gravado.
+    /// Grava o pedido (novo ou carregado) e, após o commit, inicia um novo
+    /// pedido vazio. Retorna o número gravado.
     function GravarPedido: Integer;
+
+    /// Substitui o pedido atual por um pedido gravado. Em caso de falha o
+    /// pedido atual permanece inalterado. A confirmação de descarte das
+    /// alterações locais é responsabilidade da tela (PossuiAlteracoes).
+    procedure CarregarPedido(ANumero: Integer);
+    /// Exclui o pedido carregado e inicia um novo. Retorna o número excluído.
+    function CancelarPedido: Integer;
 
     function EmEdicaoItem: Boolean;
     property Pedido: TPedido read FPedido;
@@ -257,6 +264,34 @@ begin
 
   // Só chega aqui após o commit. Iniciar um novo pedido impede que o mesmo
   // conteúdo seja gravado de novo por um clique repetido.
+  NovoPedido;
+end;
+
+procedure TPedidoVendaController.CarregarPedido(ANumero: Integer);
+var
+  LPedido: TPedido;
+  LCliente: TCliente;
+begin
+  LPedido := FPedidoService.CarregarPedido(ANumero);
+  try
+    LCliente := FConsultaService.ConsultarCliente(LPedido.CodigoCliente);
+  except
+    LPedido.Free;
+    raise;
+  end;
+  SubstituirPedido(LPedido);
+  SubstituirCliente(LCliente);
+  SubstituirProduto(nil);
+  FIdItemEmEdicao := 0;
+  FAlterado := False;
+end;
+
+function TPedidoVendaController.CancelarPedido: Integer;
+begin
+  if not FPedido.Persistido then
+    raise EValidacaoException.Create('Carregue um pedido gravado para cancelá-lo.');
+  Result := FPedido.Numero;
+  FPedidoService.CancelarPedido(Result);
   NovoPedido;
 end;
 

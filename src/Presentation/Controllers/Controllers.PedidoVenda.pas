@@ -229,6 +229,10 @@ end;
 procedure TPedidoVendaController.ExcluirItem(AIdItem: Integer);
 begin
   FPedido.RemoverItem(AIdItem);
+  // Excluir o item que estava em edição encerra a edição; caso contrário
+  // um "Inserir/Atualizar" posterior tentaria atualizar um item inexistente.
+  if AIdItem = FIdItemEmEdicao then
+    CancelarEdicaoItem;
   FAlterado := True;
 end;
 

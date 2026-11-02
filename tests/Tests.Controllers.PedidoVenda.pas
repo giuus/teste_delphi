@@ -29,6 +29,11 @@ type
     [Test] procedure GravarComItemEmEdicaoFalha;
     [Test] procedure GravarComSucessoIniciaNovoPedido;
     [Test] procedure FalhaNaGravacaoPreservaDados;
+    [Test] procedure ExcluirRecalculaTotal;
+    [Test] procedure ExcluirUltimoItemZeraTotal;
+    [Test] procedure ExcluirProdutoRepetidoMantemOutraLinha;
+    [Test] procedure ExcluirItemEmEdicaoEncerraEdicao;
+    [Test] procedure ExcluirOutroItemMantemEdicao;
   end;
 
 implementation
@@ -185,6 +190,63 @@ begin
   Assert.AreEqual(2, FController.Pedido.QuantidadeItens);
   Assert.IsFalse(FController.Pedido.Persistido);
   Assert.IsTrue(FController.PossuiAlteracoes);
+end;
+
+procedure TTestesPedidoVendaController.ExcluirRecalculaTotal;
+var
+  LId: Integer;
+begin
+  IncluirItem(1, 2, 10);
+  LId := IncluirItem(2, 1, 5.55);
+  Assert.AreEqual<Currency>(25.55, FController.Pedido.ValorTotal);
+  FController.ExcluirItem(LId);
+  Assert.AreEqual<Currency>(20, FController.Pedido.ValorTotal);
+end;
+
+procedure TTestesPedidoVendaController.ExcluirUltimoItemZeraTotal;
+var
+  LId: Integer;
+begin
+  LId := IncluirItem(1, 2, 10);
+  FController.ExcluirItem(LId);
+  Assert.AreEqual(0, FController.Pedido.QuantidadeItens);
+  Assert.AreEqual<Currency>(0, FController.Pedido.ValorTotal);
+end;
+
+procedure TTestesPedidoVendaController.ExcluirProdutoRepetidoMantemOutraLinha;
+var
+  LId1, LId2: Integer;
+begin
+  LId1 := IncluirItem(3, 1, 10);
+  LId2 := IncluirItem(3, 2, 10);
+  FController.ExcluirItem(LId2);
+  Assert.IsNotNull(FController.Pedido.LocalizarItem(LId1));
+  Assert.IsNull(FController.Pedido.LocalizarItem(LId2));
+  Assert.AreEqual<Currency>(10, FController.Pedido.ValorTotal);
+end;
+
+procedure TTestesPedidoVendaController.ExcluirItemEmEdicaoEncerraEdicao;
+var
+  LId: Integer;
+begin
+  LId := IncluirItem(3, 1, 10);
+  FController.IniciarEdicaoItem(LId);
+  FController.ExcluirItem(LId);
+  Assert.IsFalse(FController.EmEdicaoItem);
+  Assert.IsNull(FController.Produto);
+  // Sem edição ativa, salvar exige nova consulta de produto.
+  Assert.WillRaise(procedure begin FController.SalvarItem(1, 1); end, EValidacaoException);
+end;
+
+procedure TTestesPedidoVendaController.ExcluirOutroItemMantemEdicao;
+var
+  LId1, LId2: Integer;
+begin
+  LId1 := IncluirItem(3, 1, 10);
+  LId2 := IncluirItem(3, 2, 10);
+  FController.IniciarEdicaoItem(LId2);
+  FController.ExcluirItem(LId1);
+  Assert.AreEqual(LId2, FController.IdItemEmEdicao);
 end;
 
 initialization

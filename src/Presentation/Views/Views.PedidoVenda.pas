@@ -105,7 +105,7 @@ type
     procedure ExibirCliente;
     procedure ExibirTotal;
     procedure ExibirEstadoEdicao;
-    procedure AtualizarItens(AIdSelecionar: Integer);
+    procedure AtualizarItens(AIdSelecionar: Integer; APosicaoAlternativa: Integer = 0);
     procedure PreencherCamposItem(AItem: TPedidoItem);
     procedure LimparCamposItem;
     procedure ExibirProduto(AProduto: TProduto; ASugerirPreco: Boolean);
@@ -276,7 +276,10 @@ begin
     lblModoItem.Caption := 'Novo item';
 end;
 
-procedure TfrmPedidoVenda.AtualizarItens(AIdSelecionar: Integer);
+{ Reconstrói a grade a partir dos itens do pedido e atualiza o total.
+  Toda alteração de itens (inclusão, edição e exclusão) passa por aqui,
+  de modo que grade e rodapé sempre refletem o mesmo estado do domínio. }
+procedure TfrmPedidoVenda.AtualizarItens(AIdSelecionar: Integer; APosicaoAlternativa: Integer);
 var
   LIndice: Integer;
   LItem: TPedidoItem;
@@ -297,7 +300,15 @@ begin
       FItens.Post;
     end;
     if not ((AIdSelecionar > 0) and FItens.Locate(CAMPO_ID, AIdSelecionar, [])) then
+    begin
       FItens.First;
+      // Após uma exclusão, mantém a seleção na mesma posição (ou na última linha).
+      if (APosicaoAlternativa > 0) and not FItens.IsEmpty then
+        if APosicaoAlternativa > FItens.RecordCount then
+          FItens.Last
+        else
+          FItens.RecNo := APosicaoAlternativa;
+    end;
   finally
     FItens.EnableControls;
   end;
@@ -516,6 +527,8 @@ procedure TfrmPedidoVenda.ExcluirItemSelecionado;
 var
   LIdItem: Integer;
   LItem: TPedidoItem;
+  LPosicao: Integer;
+  LEstavaEmEdicao: Boolean;
 begin
   LIdItem := IdItemSelecionado;
   if LIdItem = 0 then
@@ -528,12 +541,22 @@ begin
     mtConfirmation, [mbYes, mbNo], 0, mbNo) <> mrYes then
     Exit;
 
+  LPosicao := FItens.RecNo;
+  LEstavaEmEdicao := FController.IdItemEmEdicao = LIdItem;
   if ExecutarAcao(
     procedure
     begin
       FController.ExcluirItem(LIdItem);
     end) then
-    FItens.Delete;
+  begin
+    // Correção: antes apenas a linha da grade era removida e o total do
+    // rodapé ficava desatualizado. Agora a grade e o total são recalculados
+    // a partir do pedido, inclusive quando o último item é removido.
+    AtualizarItens(0, LPosicao);
+    if LEstavaEmEdicao then
+      LimparCamposItem;
+    ExibirEstadoEdicao;
+  end;
 end;
 
 { Gravação }

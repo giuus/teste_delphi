@@ -1,0 +1,10 @@
+; Copie este arquivo para "config.ini" na MESMA pasta do executável
+; (PedidoVenda.exe é gerado na raiz do projeto) e ajuste os valores.
+; Caminhos relativos são resolvidos a partir da pasta do executável.
+[Database]
+Database=CAMINHO_DO_BANCO
+Username=USUARIO_EXEMPLO
+Password=SENHA_EXEMPLO
+Server=localhost
+Port=3050
+ClientLibrary=bin\fbclient.dll

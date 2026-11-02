@@ -1,0 +1,38 @@
+# Configuração local e credenciais (use config.ini.example como modelo)
+config.ini
+
+# Banco de dados Firebird
+*.fdb
+*.FDB
+*.gdb
+*.GDB
+
+# Binários do cliente Firebird (obter do instalador oficial; ver README)
+bin/*
+!bin/LEIAME.txt
+
+# Artefatos de compilação Delphi
+dcu/
+__history/
+__recovery/
+*.dcu
+*.exe
+*.dll
+*.bpl
+*.dcp
+*.map
+*.drc
+*.rsm
+*.tds
+*.identcache
+*.local
+*.stat
+*.dsk
+*.res
+*.otares
+*.~*
+Win32/
+Win64/
+*.dproj.local
+*.groupproj.local
+*.log
